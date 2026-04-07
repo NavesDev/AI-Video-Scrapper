@@ -1,0 +1,19 @@
+# Environment variables
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# AI Assistants
+.agent/
+.copilot/
+.cursor/
+.gemini/
+.antigravity/
+.claude/
+
+# Python
+__pycache__/
+.venv/
+venv/
