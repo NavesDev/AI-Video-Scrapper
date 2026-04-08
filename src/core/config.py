@@ -57,7 +57,7 @@ def load_app_config(config_path: Path) -> AppConfig:
     try:
         with config_path.open("r", encoding="utf-8") as config_file:
             data = json.load(config_file)
-    except json.JSONDecodeError:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return defaults
 
     if not isinstance(data, dict):
