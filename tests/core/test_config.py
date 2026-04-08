@@ -106,3 +106,63 @@ def test_load_app_config_returns_defaults_for_non_dict_json(tmp_path):
     assert config.max_retries_429 == 6
     assert config.retry_base_seconds == 2
     assert config.bilingual_mode is True
+
+
+def test_load_app_config_uses_default_temperature_for_non_finite_values(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"temperature": "nan"}),
+        encoding="utf-8",
+    )
+
+    config = load_app_config(config_path)
+
+    assert config.temperature == 0.3
+
+
+def test_load_app_config_uses_default_temperature_for_infinite_values(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"temperature": "inf"}),
+        encoding="utf-8",
+    )
+
+    config = load_app_config(config_path)
+
+    assert config.temperature == 0.3
+
+
+def test_load_app_config_uses_default_temperature_for_out_of_range_values(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"temperature": 1.2}),
+        encoding="utf-8",
+    )
+
+    config = load_app_config(config_path)
+
+    assert config.temperature == 0.3
+
+
+def test_load_app_config_uses_default_max_retries_for_negative_values(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"max_retries_429": -1}),
+        encoding="utf-8",
+    )
+
+    config = load_app_config(config_path)
+
+    assert config.max_retries_429 == 6
+
+
+def test_load_app_config_uses_default_retry_base_seconds_for_non_positive_values(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"retry_base_seconds": 0}),
+        encoding="utf-8",
+    )
+
+    config = load_app_config(config_path)
+
+    assert config.retry_base_seconds == 2
