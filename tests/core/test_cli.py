@@ -36,9 +36,12 @@ def test_get_multiple_links_manually(mocker):
     assert links == ["link1", "link2"]
 
 def test_run_cli_rota_link_unico(mocker):
-    """Testa se a opção '1' redireciona para link único e o retorna."""
+    """Testa se o fluxo de ingestão redireciona para link único e o retorna."""
     mock_select = mocker.patch('questionary.select')
-    mock_select.return_value.ask.return_value = "1. Inserir um único link"
+    mock_select.return_value.ask.side_effect = [
+        "1. Ingerir links e gerar resumos",
+        "1. Inserir um único link"
+    ]
     
     mock_get_single_link = mocker.patch('core.cli.get_single_link')
     valid_url = "https://www.youtube.com/watch?v=123"
@@ -48,9 +51,12 @@ def test_run_cli_rota_link_unico(mocker):
     assert urls == [valid_url]
 
 def test_run_cli_rota_arquivo(mocker):
-    """Testa se a opção '3' redireciona para input em arquivo e o retorna."""
+    """Testa se o fluxo de ingestão redireciona para input em arquivo e o retorna."""
     mock_select = mocker.patch('questionary.select')
-    mock_select.return_value.ask.return_value = "3. Importar a partir de um arquivo"
+    mock_select.return_value.ask.side_effect = [
+        "1. Ingerir links e gerar resumos",
+        "3. Importar a partir de um arquivo (.txt, .json, .csv)"
+    ]
     
     mock_get_from_file = mocker.patch('core.cli.get_links_from_file')
     valid_url1 = "https://www.youtube.com/watch?v=111"
@@ -59,6 +65,22 @@ def test_run_cli_rota_arquivo(mocker):
     
     urls = run_cli()
     assert urls == [valid_url1, valid_url2]
+
+def test_run_cli_aggregate_current_run(mocker):
+    """Testa se a opção de resumo final da execução atual retorna payload de ação."""
+    mock_select = mocker.patch('questionary.select')
+    mock_select.return_value.ask.return_value = "2. Gerar resumo final da execução atual"
+
+    payload = run_cli()
+    assert payload == {"action": "aggregate_current_run"}
+
+def test_run_cli_aggregate_selected_dir(mocker):
+    """Testa se a opção de resumo final por pasta/sessão retorna payload de ação."""
+    mock_select = mocker.patch('questionary.select')
+    mock_select.return_value.ask.return_value = "3. Gerar resumo final de pasta/sessão selecionada"
+
+    payload = run_cli()
+    assert payload == {"action": "aggregate_selected_dir"}
 
 def test_show_playlist_extraction_progress(mocker):
     """Testa a extração interativa CLI simulando o console rich e o gerador de chunks em API."""

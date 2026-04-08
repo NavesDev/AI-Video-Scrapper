@@ -12,11 +12,12 @@ from utils.validators import is_valid_youtube_url
 console = Console()
 
 def show_header():
-    """Mostra o cabeçalho estilizado da aplicação."""
+    """Mostra um cabeçalho bilíngue mais amigável para a experiência CLI."""
     console.clear()
-    title = Text("🎥 AI-Video-Scrapper", justify="center", style="bold cyan")
-    title.append("\nBem-vindo à ferramenta de scraping de vídeos com IA!", style="dim white")
-    panel = Panel(title, border_style="cyan", subtitle="v0.1.0")
+    title = Text("🎥 VideoScrapper Copilot CLI", justify="center", style="bold cyan")
+    title.append("\nCollect links, summarize faster. / Colete links e resuma mais rápido.", style="dim white")
+    title.append("\nChoose an action to continue. / Escolha uma ação para continuar.", style="white")
+    panel = Panel(title, border_style="cyan", subtitle="v0.1.0 • PT-BR / EN")
     console.print(panel)
     console.print()
 
@@ -64,28 +65,45 @@ def run_cli():
     """Fluxo de execução central da interface via linha de comando."""
     show_header()
 
-    choice = questionary.select(
-        "Como você deseja inserir os links?",
+    action_choice = questionary.select(
+        "What would you like to do? / O que você deseja fazer?",
         choices=[
-            "1. Inserir um único link",
-            "2. Inserir múltiplos links manualmente (colar um por um)",
-            "3. Importar a partir de um arquivo (.txt ou .json)",
-            "4. Sair"
+            "1. Ingest links and generate summaries / Ingerir links e gerar resumos",
+            "2. Generate final summary for current run / Gerar resumo final da execução atual",
+            "3. Generate final summary for selected folder/session / Gerar resumo final de pasta/sessão",
+            "4. Exit / Sair"
+        ]
+    ).ask()
+
+    if not action_choice or action_choice.startswith("4"):
+        console.print("[dim]Saindo...[/dim]")
+        sys.exit(0)
+
+    if action_choice.startswith("2"):
+        return {"action": "aggregate_current_run"}
+
+    if action_choice.startswith("3"):
+        return {"action": "aggregate_selected_dir"}
+
+    choice = questionary.select(
+        "How would you like to provide links? / Como você deseja inserir os links?",
+        choices=[
+            "1. Insert a single link / Inserir um único link",
+            "2. Insert multiple links manually / Inserir múltiplos links manualmente",
+            "3. Import links from file (.txt, .json, .csv) / Importar links de arquivo (.txt, .json, .csv)",
+            "4. Back / Voltar"
         ]
     ).ask()
 
     urls_to_process = []
 
     if not choice or choice.startswith("4"):
-        console.print("[dim]Saindo...[/dim]")
-        sys.exit(0)
-
-    elif choice.startswith("1"):
+        console.print("[yellow]Operação cancelada. / Operation canceled.[/yellow]")
+        return []
+    if choice.startswith("1"):
         urls_to_process = get_single_link()
-
     elif choice.startswith("2"):
         urls_to_process = get_multiple_links_manually()
-
     elif choice.startswith("3"):
         urls_to_process = get_links_from_file()
 
