@@ -41,19 +41,30 @@ def _to_bool(value: Any, default: bool) -> bool:
     return default
 
 
+def _to_string(value: Any, default: str) -> str:
+    if isinstance(value, str):
+        stripped_value = value.strip()
+        if stripped_value:
+            return stripped_value
+    return default
+
+
 def load_app_config(config_path: Path) -> AppConfig:
     defaults = AppConfig()
     if not config_path.exists():
         return defaults
 
-    with config_path.open("r", encoding="utf-8") as config_file:
-        data = json.load(config_file)
+    try:
+        with config_path.open("r", encoding="utf-8") as config_file:
+            data = json.load(config_file)
+    except json.JSONDecodeError:
+        return defaults
 
     if not isinstance(data, dict):
         return defaults
 
     return AppConfig(
-        gemini_model=str(data.get("gemini_model", defaults.gemini_model)),
+        gemini_model=_to_string(data.get("gemini_model"), defaults.gemini_model),
         temperature=_to_float(data.get("temperature"), defaults.temperature),
         max_retries_429=_to_int(data.get("max_retries_429"), defaults.max_retries_429),
         retry_base_seconds=_to_int(data.get("retry_base_seconds"), defaults.retry_base_seconds),
