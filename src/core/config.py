@@ -1,4 +1,5 @@
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,29 @@ def _to_float(value: Any, default: float) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _to_temperature(value: Any, default: float) -> float:
+    parsed_value = _to_float(value, default)
+    if not math.isfinite(parsed_value):
+        return default
+    if parsed_value < 0 or parsed_value > 1:
+        return default
+    return parsed_value
+
+
+def _to_non_negative_int(value: Any, default: int) -> int:
+    parsed_value = _to_int(value, default)
+    if parsed_value < 0:
+        return default
+    return parsed_value
+
+
+def _to_positive_int(value: Any, default: int) -> int:
+    parsed_value = _to_int(value, default)
+    if parsed_value <= 0:
+        return default
+    return parsed_value
 
 
 def _to_bool(value: Any, default: bool) -> bool:
@@ -65,8 +89,8 @@ def load_app_config(config_path: Path) -> AppConfig:
 
     return AppConfig(
         gemini_model=_to_string(data.get("gemini_model"), defaults.gemini_model),
-        temperature=_to_float(data.get("temperature"), defaults.temperature),
-        max_retries_429=_to_int(data.get("max_retries_429"), defaults.max_retries_429),
-        retry_base_seconds=_to_int(data.get("retry_base_seconds"), defaults.retry_base_seconds),
+        temperature=_to_temperature(data.get("temperature"), defaults.temperature),
+        max_retries_429=_to_non_negative_int(data.get("max_retries_429"), defaults.max_retries_429),
+        retry_base_seconds=_to_positive_int(data.get("retry_base_seconds"), defaults.retry_base_seconds),
         bilingual_mode=_to_bool(data.get("bilingual_mode"), defaults.bilingual_mode),
     )
