@@ -36,3 +36,20 @@ def test_invalid_data_types():
     assert is_valid_youtube_url(None) is False
     assert is_valid_youtube_url(123) is False
     assert is_valid_youtube_url("") is False
+
+from utils.validators import get_youtube_url_type, YouTubeLinkType
+
+def test_get_youtube_url_type_video():
+    assert get_youtube_url_type("https://www.youtube.com/watch?v=dQw4w9WgXcQ") == YouTubeLinkType.VIDEO
+    assert get_youtube_url_type("https://youtu.be/dQw4w9WgXcQ") == YouTubeLinkType.VIDEO
+    assert get_youtube_url_type("https://www.youtube.com/shorts/3Zz-E7R7Z") == YouTubeLinkType.VIDEO
+    # Contém ID de playlist mas é primeiramente um vídeo da playlist
+    assert get_youtube_url_type("https://www.youtube.com/watch?v=123&list=abc") == YouTubeLinkType.VIDEO
+
+def test_get_youtube_url_type_playlist():
+    assert get_youtube_url_type("https://www.youtube.com/playlist?list=PL_foo_bar") == YouTubeLinkType.PLAYLIST
+
+def test_get_youtube_url_type_unknown():
+    assert get_youtube_url_type("https://youtube.com/") == YouTubeLinkType.UNKNOWN
+    assert get_youtube_url_type("https://google.com") == YouTubeLinkType.UNKNOWN
+    assert get_youtube_url_type("random_text") == YouTubeLinkType.UNKNOWN

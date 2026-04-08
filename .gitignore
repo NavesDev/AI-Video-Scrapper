@@ -13,7 +13,8 @@
 .antigravity/
 .claude/
 
-# Python
+# Python 
 __pycache__/
+.pytest_cache/
 .venv/
 venv/

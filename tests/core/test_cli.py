@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 import pytest
-from core.cli import get_single_link, get_multiple_links_manually, run_cli
+from core.cli import get_single_link, get_multiple_links_manually, run_cli, show_playlist_extraction_progress
 from unittest.mock import MagicMock
 
 def test_get_single_link_valido(mocker):
@@ -59,3 +59,24 @@ def test_run_cli_rota_arquivo(mocker):
     
     urls = run_cli()
     assert urls == [valid_url1, valid_url2]
+
+def test_show_playlist_extraction_progress(mocker):
+    """Testa a extração interativa CLI simulando o console rich e o gerador de chunks em API."""
+    mock_console = mocker.patch("core.cli.console")
+    
+    def gerador_test(pid):
+        yield [
+            {"title": "Video Longo Pra testar o corte de len maios que sessenta caracteres aqui", "video_id": "V1"}
+        ]
+        yield [
+            {"title": "Video Curto", "video_id": "V2"}
+        ]
+        
+    videos_coletados = show_playlist_extraction_progress("PL_dummy123", "Curso Legal", gerador_test)
+    
+    assert len(videos_coletados) == 2
+    assert videos_coletados[0]["video_id"] == "V1"
+    assert videos_coletados[1]["title"] == "Video Curto"
+    
+    assert mock_console.status.called
+    assert mock_console.print.call_count > 0
