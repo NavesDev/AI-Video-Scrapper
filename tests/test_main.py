@@ -19,7 +19,6 @@ def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
     mocker.patch("main.load_dotenv")
     mocker.patch("main.init_session_dir", return_value=session_dir)
     mocker.patch("main.load_app_config", return_value=config)
-    mocker.patch("main.run_cli", side_effect=[["playlist-url", "video-url"], KeyboardInterrupt()])
     mocker.patch("main.get_youtube_url_type", side_effect=[YouTubeLinkType.PLAYLIST, YouTubeLinkType.VIDEO])
     mocker.patch("main.extract_playlist_id", return_value="pl123")
     mocker.patch("main.fetch_playlist_title", return_value="Playlist Name")
@@ -28,6 +27,7 @@ def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
     mocker.patch("main.show_single_video_progress", return_value={"video_id": "vid456", "title": "Single", "description": ""})
     append_extraction = mocker.patch("main.append_extraction")
     show_ai_generation_progress = mocker.patch("main.show_ai_generation_progress")
+    run_cli = mocker.patch("main.run_cli", side_effect=[["playlist-url", "video-url"], KeyboardInterrupt()])
     mocker.patch("main.console.input", return_value="")
     mocker.patch("main.sys.exit", side_effect=SystemExit(0))
 
@@ -35,6 +35,7 @@ def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
         main.main()
 
     assert append_extraction.call_count == 2
+    run_cli.assert_called_with(app_config=config)
     assert show_ai_generation_progress.call_count == 2
     assert show_ai_generation_progress.call_args_list[0].kwargs["app_config"] == config
     assert show_ai_generation_progress.call_args_list[1].kwargs["app_config"] == config

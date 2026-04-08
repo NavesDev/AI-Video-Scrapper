@@ -65,7 +65,7 @@ def main():
         console.print(f"[dim]📁 Repositório da sessão salvo em: {session_dir.relative_to(session_dir.parent.parent)}[/dim]\n")
         
         while True:
-            cli_payload = run_cli()
+            cli_payload = run_cli(app_config=app_config)
 
             if isinstance(cli_payload, dict):
                 action = cli_payload.get("action")

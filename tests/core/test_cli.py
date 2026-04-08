@@ -10,6 +10,7 @@ from core.cli import (
     get_multiple_links_manually,
     get_summary_source_dir,
     run_cli,
+    show_header,
     show_playlist_extraction_progress,
 )
 from unittest.mock import MagicMock
@@ -55,6 +56,39 @@ def test_run_cli_rota_link_unico(mocker):
     
     urls = run_cli()
     assert urls == [valid_url]
+
+
+def test_run_cli_uses_pt_br_prompts_when_bilingual_disabled(mocker):
+    """Com bilingual_mode=False, os textos do menu devem ficar apenas em PT-BR."""
+    mock_select = mocker.patch("questionary.select")
+    mock_select.return_value.ask.side_effect = [
+        "1. Ingerir links e gerar resumos",
+        "4. Voltar",
+    ]
+    mocker.patch("core.cli.show_header")
+
+    run_cli(False)
+
+    first_prompt = mock_select.call_args_list[0].args[0]
+    first_choices = mock_select.call_args_list[0].kwargs["choices"]
+    second_prompt = mock_select.call_args_list[1].args[0]
+    second_choices = mock_select.call_args_list[1].kwargs["choices"]
+
+    assert first_prompt == "O que você deseja fazer?"
+    assert first_choices[0] == "1. Ingerir links e gerar resumos"
+    assert first_choices[3] == "4. Sair"
+    assert second_prompt == "Como você deseja inserir os links?"
+    assert second_choices[0] == "1. Inserir um único link"
+    assert second_choices[3] == "4. Voltar"
+
+
+def test_show_header_uses_pt_br_subtitle_when_bilingual_disabled(mocker):
+    mock_console = mocker.patch("core.cli.console")
+
+    show_header(False)
+
+    panel_arg = mock_console.print.call_args_list[0].args[0]
+    assert panel_arg.subtitle == "v0.1.0 • PT-BR"
 
 def test_run_cli_rota_arquivo(mocker):
     """Testa se o fluxo de ingestão redireciona para input em arquivo e o retorna."""

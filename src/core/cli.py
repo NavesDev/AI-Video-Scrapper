@@ -11,13 +11,29 @@ from utils.validators import is_valid_youtube_url
 
 console = Console()
 
-def show_header():
-    """Mostra um cabeçalho bilíngue mais amigável para a experiência CLI."""
+def _is_bilingual_enabled(app_config=None) -> bool:
+    if isinstance(app_config, bool):
+        return app_config
+    if app_config is not None and hasattr(app_config, "bilingual_mode"):
+        return bool(app_config.bilingual_mode)
+    return True
+
+
+def show_header(app_config=None):
+    """Mostra um cabeçalho amigável para a experiência CLI."""
+    bilingual_mode = _is_bilingual_enabled(app_config)
     console.clear()
     title = Text("🎥 VideoScrapper Copilot CLI", justify="center", style="bold cyan")
-    title.append("\nCollect links, summarize faster. / Colete links e resuma mais rápido.", style="dim white")
-    title.append("\nChoose an action to continue. / Escolha uma ação para continuar.", style="white")
-    panel = Panel(title, border_style="cyan", subtitle="v0.1.0 • PT-BR / EN")
+    if bilingual_mode:
+        title.append("\nCollect links, summarize faster. / Colete links e resuma mais rápido.", style="dim white")
+        title.append("\nChoose an action to continue. / Escolha uma ação para continuar.", style="white")
+        subtitle = "v0.1.0 • PT-BR / EN"
+    else:
+        title.append("\nColete links e resuma mais rápido.", style="dim white")
+        title.append("\nEscolha uma ação para continuar.", style="white")
+        subtitle = "v0.1.0 • PT-BR"
+
+    panel = Panel(title, border_style="cyan", subtitle=subtitle)
     console.print(panel)
     console.print()
 
@@ -72,18 +88,35 @@ def get_summary_source_dir() -> Path | None:
     return Path(selected_path.strip()).expanduser()
 
 
-def run_cli():
+def run_cli(app_config=None):
     """Fluxo de execução central da interface via linha de comando."""
-    show_header()
+    bilingual_mode = _is_bilingual_enabled(app_config)
+    show_header(app_config=app_config)
 
-    action_choice = questionary.select(
-        "What would you like to do? / O que você deseja fazer?",
-        choices=[
+    action_prompt = (
+        "What would you like to do? / O que você deseja fazer?"
+        if bilingual_mode else
+        "O que você deseja fazer?"
+    )
+    action_choices = (
+        [
             "1. Ingest links and generate summaries / Ingerir links e gerar resumos",
             "2. Generate final summary for current run / Gerar resumo final da execução atual",
             "3. Generate final summary for selected folder/session / Gerar resumo final de pasta/sessão",
             "4. Exit / Sair"
         ]
+        if bilingual_mode else
+        [
+            "1. Ingerir links e gerar resumos",
+            "2. Gerar resumo final da execução atual",
+            "3. Gerar resumo final de pasta/sessão",
+            "4. Sair",
+        ]
+    )
+
+    action_choice = questionary.select(
+        action_prompt,
+        choices=action_choices
     ).ask()
 
     if not action_choice or action_choice.startswith("4"):
@@ -96,20 +129,37 @@ def run_cli():
     if action_choice.startswith("3"):
         return {"action": "aggregate_selected_dir"}
 
-    choice = questionary.select(
-        "How would you like to provide links? / Como você deseja inserir os links?",
-        choices=[
+    ingest_prompt = (
+        "How would you like to provide links? / Como você deseja inserir os links?"
+        if bilingual_mode else
+        "Como você deseja inserir os links?"
+    )
+    ingest_choices = (
+        [
             "1. Insert a single link / Inserir um único link",
             "2. Insert multiple links manually / Inserir múltiplos links manualmente",
             "3. Import links from file (.txt, .json, .csv) / Importar links de arquivo (.txt, .json, .csv)",
             "4. Back / Voltar"
         ]
-    ).ask()
+        if bilingual_mode else
+        [
+            "1. Inserir um único link",
+            "2. Inserir múltiplos links manualmente",
+            "3. Importar links de arquivo (.txt, .json, .csv)",
+            "4. Voltar",
+        ]
+    )
+    choice = questionary.select(ingest_prompt, choices=ingest_choices).ask()
 
     urls_to_process = []
 
     if not choice or choice.startswith("4"):
-        console.print("[yellow]Operação cancelada. / Operation canceled.[/yellow]")
+        cancel_message = (
+            "[yellow]Operação cancelada. / Operation canceled.[/yellow]"
+            if bilingual_mode else
+            "[yellow]Operação cancelada.[/yellow]"
+        )
+        console.print(cancel_message)
         return []
     if choice.startswith("1"):
         urls_to_process = get_single_link()
