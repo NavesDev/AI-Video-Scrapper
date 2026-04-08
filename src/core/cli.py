@@ -1,8 +1,10 @@
 import sys
+from pathlib import Path
 import questionary
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn
 
 from utils.file_parser import parse_links_from_file
 from utils.validators import is_valid_youtube_url
@@ -143,3 +145,69 @@ def show_single_video_progress(video_id: str, fetch_func) -> dict | None:
     except Exception as e:
         console.print(f"[red]Erro ao consultar API do YouTube: {e}[/red]")
         return None
+
+def show_ai_generation_progress(videos: list[dict], playlist_name: str | None, session_dir: Path):
+    """
+    Controla a exibição visual da IA. Se for 1 vídeo, mostra spinner simples. 
+    Se for playlist, mostra barra de progresso numérica.
+    """
+    from core.gemini_api import generate_video_summary
+    from core.storage import save_abstract
+    
+    if not videos:
+        return
+    
+    # CASO 1: VÍDEO ÚNICO (Interface simplificada com Spinner)
+    if len(videos) == 1:
+        v = videos[0]
+        title = v.get("title", "Desconhecido")
+        vid_id = v.get("video_id", "")
+        desc = v.get("description", "")
+        
+        if "Private video" in title or not vid_id:
+            return
+            
+        url = f"https://www.youtube.com/watch?v={vid_id}"
+        with console.status(f"[purple]Processando IA para vídeo único...[/purple] [cyan]{title[:40]}[/cyan]", spinner="aesthetic"):
+            try:
+                md_resp = generate_video_summary(url, title, desc)
+                save_abstract(session_dir, md_resp, title, playlist_name)
+                console.print(f"[bold green]✓ Resumo Gerado:[/bold green] {title}")
+            except Exception as e:
+                console.print(f"[red]Erro GenIA:[/red] {e}")
+        return
+
+    # CASO 2: PLAYLIST (Interface com Barra de Progresso e Porcentagem)
+    label = f"[purple]Processando GenAI ({len(videos)} vídeos)...[/purple]"
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=40),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task(label, total=len(videos))
+        
+        for v in videos:
+            title = v.get("title", "Desconhecido")
+            vid_id = v.get("video_id", "")
+            desc = v.get("description", "")
+            
+            if "Private video" in title or not vid_id:
+                progress.advance(task)
+                continue
+            
+            progress.update(task, description=f"[cyan]Resumindo:[/cyan] {title[:30]}...")
+            url = f"https://www.youtube.com/watch?v={vid_id}"
+            
+            try:
+                md_resp = generate_video_summary(url, title, desc)
+                save_abstract(session_dir, md_resp, title, playlist_name)
+                progress.console.print(f"  [dim]↳ Arquivo salvo com sucesso:[/dim] [green]{title[:40]}...[/green]")
+            except Exception as e:
+                progress.console.print(f"[red]Erro GenIA no vídeo '{title}':[/red] {e}")
+                
+            progress.advance(task)
+            
+    console.print(f"\n[bold green]✓ Todos os resumos Markdown gerados por IA e salvos na pasta 'abstracts'![/bold green]\n")
