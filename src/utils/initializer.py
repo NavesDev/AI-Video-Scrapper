@@ -3,6 +3,7 @@ from pathlib import Path
 import questionary
 from rich.console import Console
 from dotenv import get_key, set_key
+from utils.validators import is_valid_gemini_api_key
 
 console = Console()
 
@@ -19,7 +20,13 @@ def verify_api_keys(base_dir: Path):
         
         token = questionary.password("Coloque sua GEMINI_API_KEY aqui:").ask()
         if token:
-            set_key(env_file, "GEMINI_API_KEY", token.strip(), quote_mode="always")
+            token = token.strip()
+            if not is_valid_gemini_api_key(token):
+                raise ValueError(
+                    "Formato inválido para GEMINI_API_KEY. "
+                    "Use uma chave válida do Google AI Studio (ex.: começa com 'AIza')."
+                )
+            set_key(env_file, "GEMINI_API_KEY", token, quote_mode="always")
             console.print("[green]✓ Chave do Gemini salva no .env![/green]")
             
     youtube_key = get_key(env_file, "YOUTUBE_API_KEY")
