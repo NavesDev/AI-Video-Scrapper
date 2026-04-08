@@ -1,0 +1,67 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
+
+from utils.initializer import setup_environment
+
+def test_setup_environment_creates_from_templates(tmp_path):
+    """Copia corretamente ambos usando .example quando a raiz não os detém."""
+    # Cria os exemplos simulados falsos
+    env_ex = tmp_path / ".env.example"
+    env_ex.write_text("API_KEY=123")
+    
+    sys_ex = tmp_path / "system_instruction.md.example"
+    sys_ex.write_text("Hello Prompt")
+    
+    # Executa Bootloader silencioso para o ambiente
+    setup_environment(base_dir=tmp_path, interactive=False)
+    
+    # Verifica se os recheios brotaram 
+    env_oficial = tmp_path / ".env"
+    assert env_oficial.exists()
+    assert env_oficial.read_text() == "API_KEY=123"
+    
+    md_oficial = tmp_path / "system_instruction.md"
+    assert md_oficial.exists()
+    assert md_oficial.read_text() == "Hello Prompt"
+
+def test_setup_environment_skips_if_exist(tmp_path):
+    """Testa se o Bootloader respeita arquivos consolidados prévidados, nunca dando Overwrite cego."""
+    env_ex = tmp_path / ".env.example"
+    env_ex.write_text("API_KEY=TEMPLATE")
+    
+    env_real = tmp_path / ".env"
+    env_real.write_text("API_KEY=REAL")
+    
+    setup_environment(base_dir=tmp_path, interactive=False)
+    
+    # O output não pode ter sido modificado por template
+    assert env_real.read_text() == "API_KEY=REAL"
+    
+def test_setup_environment_skips_if_no_template(tmp_path):
+    """Não deve quebrar nem tentar copiar se não existir fallback na sub-pasta .example."""
+    env_real = tmp_path / ".env"
+    
+    setup_environment(base_dir=tmp_path, interactive=False)
+    
+    assert not env_real.exists()
+
+def test_verify_api_keys_interactive(mocker, tmp_path):
+    """Testa se a função aciona o Questionary solicitando as chaves e grava no arquivo cego."""
+    env_real = tmp_path / ".env"
+    env_real.touch()  # arquivo de properties vazio
+    
+    # Mocks do questionary simulando digitação
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = ["abc_gemini_123", "xyz_youtube_999"]
+    
+    # Executa com interactivo ativado explicitamente
+    setup_environment(base_dir=tmp_path, interactive=True)
+    
+    # Lendo final para avaliar injeções do dotenv
+    linhas = env_real.read_text()
+    assert "abc_gemini_123" in linhas
+    assert "xyz_youtube_999" in linhas
+    assert "GEMINI_API_KEY" in linhas
+    assert "YOUTUBE_API_KEY" in linhas
