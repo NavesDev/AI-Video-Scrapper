@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from core.cli import run_cli, show_playlist_extraction_progress, show_single_video_progress
 from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title, fetch_video_metadata
+from core.storage import init_session_dir, append_extraction
 from utils.validators import get_youtube_url_type, YouTubeLinkType
 from rich.console import Console
 
@@ -18,6 +19,10 @@ def main():
     load_dotenv()
     
     try:
+        # Inicializa o diretório /data/session_N desta sessão
+        session_dir = init_session_dir()
+        console.print(f"[dim]📁 Repositório da sessão salvo em: {session_dir.relative_to(session_dir.parent.parent)}[/dim]\n")
+        
         while True:
             # A CLI retorna as urls coletadas
             urls = run_cli()
@@ -34,11 +39,19 @@ def main():
                         
                         # Toda regra de interface de carregamento está isolada na CLI
                         videos = show_playlist_extraction_progress(playlist_id, playlist_name, fetch_playlist_videos)
+                        if videos:
+                            # Registra o Node Playlist -> Enum name = "PLAYLIST"
+                            append_extraction(session_dir, name=playlist_name, extract_type=url_type.name, payload=videos)
+                            console.print(f"[dim]💾 Dados anexados em 'video-metadatas.json'.[/dim]")
                         
                     elif url_type == YouTubeLinkType.VIDEO:
                         video_id = extract_video_id(url)
                         if video_id:
                             video = show_single_video_progress(video_id, fetch_video_metadata)
+                            if video:
+                                # Registra o Node Video Único -> Enum name = "VIDEO"
+                                append_extraction(session_dir, name=video["title"], extract_type=url_type.name, payload=video)
+                                console.print(f"[dim]💾 Dados anexados em 'video-metadatas.json'.[/dim]")
                         else:
                             console.print(f"\n[red]❌ Erro ao extrair ID do vídeo na URL:[/red] {url}")
                         
