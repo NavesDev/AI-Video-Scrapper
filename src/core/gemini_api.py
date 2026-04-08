@@ -86,6 +86,9 @@ def generate_global_summary_from_abstracts(
     abstract_markdowns: list[str],
     app_config: AppConfig | None = None,
 ) -> str:
+    if not abstract_markdowns:
+        raise ValueError("Lista de resumos vazia; informe ao menos um resumo para gerar o consolidado.")
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("A chave GEMINI_API_KEY não foi encontrada ou está vazia.")
