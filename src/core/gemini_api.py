@@ -89,6 +89,12 @@ def generate_global_summary_from_abstracts(
     if not abstract_markdowns:
         raise ValueError("Lista de resumos vazia; informe ao menos um resumo para gerar o consolidado.")
 
+    meaningful_abstracts = [abstract.strip() for abstract in abstract_markdowns if abstract and abstract.strip()]
+    if not meaningful_abstracts:
+        raise ValueError(
+            "Nenhum resumo válido encontrado; informe ao menos um resumo com conteúdo para gerar o consolidado."
+        )
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("A chave GEMINI_API_KEY não foi encontrada ou está vazia.")
@@ -97,7 +103,7 @@ def generate_global_summary_from_abstracts(
     genai.configure(api_key=api_key.strip())
     model = _build_model(config)
 
-    abstracts_payload = "\n\n---\n\n".join(abstract_markdowns)
+    abstracts_payload = "\n\n---\n\n".join(meaningful_abstracts)
     prompt = (
         "Siga restritamente suas instruções de sistema e sintetize os resumos a seguir em um único resumo global, "
         "objetivo e fácil de entender. "
