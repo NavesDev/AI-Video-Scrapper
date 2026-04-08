@@ -126,3 +126,20 @@ def show_playlist_extraction_progress(playlist_id: str, playlist_name: str, fetc
     except Exception as e:
         console.print(f"[red]Erro ao extrair metadados da playlist: {e}[/red]")
         return []
+
+def show_single_video_progress(video_id: str, fetch_func) -> dict | None:
+    """Exibe no painel o carregamento visual e resultado da busca de um único vídeo."""
+    try:
+        with console.status(f"[bold green]Conectando com YouTube e buscando vídeo...[/bold green]", spinner="dots"):
+            video_data = fetch_func(video_id)
+            
+        if video_data:
+            short_title = video_data['title'][:60] + "..." if len(video_data['title']) > 60 else video_data['title']
+            console.print(f"\n[cyan]🎬 Vídeo Detectado:[/cyan] [bold]{short_title}[/bold] [dim]({video_id})[/dim]")
+            return video_data
+        else:
+            console.print(f"[red]⚠️ Não foi possível carregar os metadados do vídeo: {video_id}[/red]")
+            return None
+    except Exception as e:
+        console.print(f"[red]Erro ao consultar API do YouTube: {e}[/red]")
+        return None
