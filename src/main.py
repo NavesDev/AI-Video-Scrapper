@@ -10,14 +10,17 @@ from core.cli import run_cli, show_playlist_extraction_progress, show_single_vid
 from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title, fetch_video_metadata
 from core.storage import init_session_dir, append_extraction
 from utils.validators import get_youtube_url_type, YouTubeLinkType
+from utils.initializer import setup_environment
 from rich.console import Console
 
 console = Console()
 
 def main():
+    # Prepara arquivos esqueleto automaticamente pro usuário se ele não preencheu/criou
+    setup_environment()
+    
     # Carrega variáveis de ambiente como do .env (necessário para YOUTUBE_API_KEY)
     load_dotenv()
-    
     try:
         # Inicializa o diretório /data/session_N desta sessão
         session_dir = init_session_dir()
