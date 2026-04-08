@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from dotenv import load_dotenv
 
-from core.cli import run_cli, show_playlist_extraction_progress, show_single_video_progress
+from core.cli import run_cli, show_playlist_extraction_progress, show_single_video_progress, show_ai_generation_progress
 from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title, fetch_video_metadata
 from core.storage import init_session_dir, append_extraction
 from utils.validators import get_youtube_url_type, YouTubeLinkType
@@ -46,6 +46,9 @@ def main():
                             # Registra o Node Playlist -> Enum name = "PLAYLIST"
                             append_extraction(session_dir, name=playlist_name, extract_type=url_type.name, payload=videos)
                             console.print(f"[dim]💾 Dados anexados em 'video-metadatas.json'.[/dim]")
+                            
+                            # Etapa 2: Repassa pra cadeia multimodal sumariar localmente:
+                            show_ai_generation_progress(videos, playlist_name, session_dir)
                         
                     elif url_type == YouTubeLinkType.VIDEO:
                         video_id = extract_video_id(url)
@@ -55,6 +58,9 @@ def main():
                                 # Registra o Node Video Único -> Enum name = "VIDEO"
                                 append_extraction(session_dir, name=video["title"], extract_type=url_type.name, payload=video)
                                 console.print(f"[dim]💾 Dados anexados em 'video-metadatas.json'.[/dim]")
+                                
+                                # Etapa 2: Repassa pra cadeia multimodal 
+                                show_ai_generation_progress([video], None, session_dir)
                         else:
                             console.print(f"\n[red]❌ Erro ao extrair ID do vídeo na URL:[/red] {url}")
                         

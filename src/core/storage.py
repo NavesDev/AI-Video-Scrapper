@@ -1,6 +1,7 @@
 import os
 import json
 from pathlib import Path
+from utils.formatters import normalize_name
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
@@ -53,3 +54,26 @@ def append_extraction(session_dir: Path, name: str, extract_type: str, payload):
             
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump([node], f, indent=4, ensure_ascii=False)
+
+def save_abstract(session_dir: Path, markdown_content: str, title: str, playlist_name: str | None = None):
+    """Grava o resumo Markdown gerado pela IA seguindo os limites estruturais de 20 caracteres nos subfolders."""
+    abstracts_dir = session_dir / "abstracts"
+    
+    # Roteamento se for Playlilst (Subpasta extra isolada)
+    if playlist_name:
+        playlist_norm = normalize_name(playlist_name)
+        abstracts_dir = abstracts_dir / playlist_norm
+        
+    abstracts_dir.mkdir(parents=True, exist_ok=True)
+    
+    title_base = normalize_name(title)
+    file_path = abstracts_dir / f"{title_base}.md"
+    
+    # Lógica de incremento para evitar colisão em títulos com mesmos 20 caracteres iniciais
+    counter = 2
+    while file_path.exists():
+        file_path = abstracts_dir / f"{title_base}-{counter}.md"
+        counter += 1
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(markdown_content)
