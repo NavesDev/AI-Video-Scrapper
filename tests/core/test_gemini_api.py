@@ -7,7 +7,7 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 from core.config import AppConfig
-from core.gemini_api import generate_video_summary
+from core.gemini_api import generate_global_summary_from_abstracts, generate_video_summary
 
 
 def test_generate_video_summary_retries_on_rate_limit_and_succeeds(mocker):
@@ -73,3 +73,36 @@ def test_generate_video_summary_raises_after_exhausting_rate_limit_retries(mocke
         mocker.call(3.0),
         mocker.call(6.0),
     ]
+
+
+def test_generate_global_summary_from_abstracts_retries_and_builds_prompt(mocker):
+    mocker.patch.dict("os.environ", {"GEMINI_API_KEY": "AIza_fake"})
+    mocker.patch("core.gemini_api._load_system_instruction", return_value="instr")
+    mocker.patch("core.gemini_api.genai.configure")
+    mock_sleep = mocker.patch("core.gemini_api.time.sleep")
+
+    model = mocker.MagicMock()
+    model.generate_content.side_effect = [
+        Exception("429 RESOURCE_EXHAUSTED"),
+        SimpleNamespace(text="global-summary"),
+    ]
+    mocker.patch("core.gemini_api.genai.GenerativeModel", return_value=model)
+
+    config = AppConfig(max_retries_429=2, retry_base_seconds=3)
+    abstracts = ["# A\ntexto A", "# B\ntexto B"]
+    summary = generate_global_summary_from_abstracts(abstracts, app_config=config)
+
+    assert summary == "global-summary"
+    assert model.generate_content.call_count == 2
+    mock_sleep.assert_called_once_with(3)
+
+    prompt_used = model.generate_content.call_args[0][0]
+    assert "texto A" in prompt_used
+    assert "texto B" in prompt_used
+
+
+def test_generate_global_summary_from_abstracts_requires_api_key(mocker):
+    mocker.patch.dict("os.environ", {}, clear=True)
+
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        generate_global_summary_from_abstracts(["# Resumo"]) 
