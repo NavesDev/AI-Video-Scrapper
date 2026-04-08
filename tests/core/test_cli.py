@@ -5,7 +5,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 import pytest
-from core.cli import get_single_link, get_multiple_links_manually, run_cli, show_playlist_extraction_progress
+from core.cli import (
+    get_single_link,
+    get_multiple_links_manually,
+    get_summary_source_dir,
+    run_cli,
+    show_playlist_extraction_progress,
+)
 from unittest.mock import MagicMock
 
 def test_get_single_link_valido(mocker):
@@ -81,6 +87,24 @@ def test_run_cli_aggregate_selected_dir(mocker):
 
     payload = run_cli()
     assert payload == {"action": "aggregate_selected_dir"}
+
+
+def test_get_summary_source_dir_returns_path(mocker):
+    mock_path = mocker.patch("questionary.path")
+    mock_path.return_value.ask.return_value = "  /home/naves/mock-dir  "
+
+    result = get_summary_source_dir()
+
+    assert str(result) == "/home/naves/mock-dir"
+
+
+def test_get_summary_source_dir_returns_none_for_empty_input(mocker):
+    mock_path = mocker.patch("questionary.path")
+    mock_path.return_value.ask.return_value = "   "
+
+    result = get_summary_source_dir()
+
+    assert result is None
 
 def test_show_playlist_extraction_progress(mocker):
     """Testa a extração interativa CLI simulando o console rich e o gerador de chunks em API."""

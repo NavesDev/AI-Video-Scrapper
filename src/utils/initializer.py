@@ -72,6 +72,13 @@ def setup_environment(base_dir: Path = None, interactive: bool = True):
     
     if not sys_inst.exists() and sys_example.exists():
         shutil.copy(sys_example, sys_inst)
+
+    # 3. Fallback do config.json
+    config_file = base_dir / "config.json"
+    config_example = base_dir / "config.example.json"
+
+    if not config_file.exists() and config_example.exists():
+        shutil.copy(config_example, config_file)
         
     if interactive:
         verify_api_keys(base_dir)
