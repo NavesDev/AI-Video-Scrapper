@@ -41,10 +41,11 @@ def test_run_cli_rota_link_unico(mocker):
     mock_select.return_value.ask.return_value = "1. Inserir um único link"
     
     mock_get_single_link = mocker.patch('core.cli.get_single_link')
-    mock_get_single_link.return_value = ["link_teste"]
+    valid_url = "https://www.youtube.com/watch?v=123"
+    mock_get_single_link.return_value = [valid_url]
     
     urls = run_cli()
-    assert urls == ["link_teste"]
+    assert urls == [valid_url]
 
 def test_run_cli_rota_arquivo(mocker):
     """Testa se a opção '3' redireciona para input em arquivo e o retorna."""
@@ -52,7 +53,9 @@ def test_run_cli_rota_arquivo(mocker):
     mock_select.return_value.ask.return_value = "3. Importar a partir de um arquivo"
     
     mock_get_from_file = mocker.patch('core.cli.get_links_from_file')
-    mock_get_from_file.return_value = ["link_arquivo1", "link_arquivo2"]
+    valid_url1 = "https://www.youtube.com/watch?v=111"
+    valid_url2 = "https://www.youtube.com/watch?v=222"
+    mock_get_from_file.return_value = [valid_url1, valid_url2]
     
     urls = run_cli()
-    assert urls == ["link_arquivo1", "link_arquivo2"]
+    assert urls == [valid_url1, valid_url2]
