@@ -14,8 +14,15 @@ def verify_api_keys(base_dir: Path):
         return
         
     gemini_key = get_key(env_file, "GEMINI_API_KEY")
-    if not gemini_key or gemini_key.strip() == "":
-        console.print("\n[yellow]⚠️ Chave da IA do Gemini (GEMINI_API_KEY) não encontrada![/yellow]")
+    gemini_key = gemini_key.strip() if gemini_key else ""
+    gemini_key_is_valid = is_valid_gemini_api_key(gemini_key) if gemini_key else False
+    gemini_key_needs_update = not gemini_key or not gemini_key_is_valid
+
+    if gemini_key_needs_update:
+        if gemini_key and not gemini_key_is_valid:
+            console.print("\n[yellow]⚠️ GEMINI_API_KEY existente está em formato inválido![/yellow]")
+        else:
+            console.print("\n[yellow]⚠️ Chave da IA do Gemini (GEMINI_API_KEY) não encontrada![/yellow]")
         console.print("Obtenha sua chave gratuitamente em: [blue]https://aistudio.google.com/api-keys[/blue]")
         
         token = questionary.password("Coloque sua GEMINI_API_KEY aqui:").ask()
@@ -28,6 +35,11 @@ def verify_api_keys(base_dir: Path):
                 )
             set_key(env_file, "GEMINI_API_KEY", token, quote_mode="always")
             console.print("[green]✓ Chave do Gemini salva no .env![/green]")
+        elif gemini_key and not gemini_key_is_valid:
+            raise ValueError(
+                "Formato inválido para GEMINI_API_KEY. "
+                "Use uma chave válida do Google AI Studio (ex.: começa com 'AIza')."
+            )
             
     youtube_key = get_key(env_file, "YOUTUBE_API_KEY")
     if not youtube_key or youtube_key.strip() == "":

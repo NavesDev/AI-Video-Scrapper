@@ -80,3 +80,16 @@ def test_verify_api_keys_rejects_invalid_gemini_key(mocker, tmp_path):
 
     with pytest.raises(ValueError, match="GEMINI_API_KEY"):
         setup_environment(base_dir=tmp_path, interactive=True)
+
+
+def test_verify_api_keys_rejects_existing_invalid_gemini_key(mocker, tmp_path):
+    """Valor Gemini inválido já existente deve ser rejeitado e exigir correção."""
+    env_real = tmp_path / ".env"
+    env_real.write_text('GEMINI_API_KEY="placeholder"\nYOUTUBE_API_KEY="yt_key"\n')
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = ["placeholder"]
+
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        setup_environment(base_dir=tmp_path, interactive=True)
+
+    assert mock_ask.call_count == 1
