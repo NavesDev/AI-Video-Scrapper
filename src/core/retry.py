@@ -1,3 +1,6 @@
+import re
+
+
 def is_rate_limit_error(error: Exception) -> bool:
     """Retorna True para erros de limite de taxa (429/RESOURCE_EXHAUSTED)."""
     for attr_name in ("status_code", "code", "status"):
@@ -11,9 +14,11 @@ def is_rate_limit_error(error: Exception) -> bool:
                 return True
 
     error_message = str(error).lower()
-    return any(
-        marker in error_message
-        for marker in ("429", "resource_exhausted", "rate limit", "too many requests")
+    return (
+        bool(re.search(r"\b429\b", error_message))
+        or "resource_exhausted" in error_message
+        or "rate limit" in error_message
+        or "too many requests" in error_message
     )
 
 
