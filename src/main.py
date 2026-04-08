@@ -34,8 +34,10 @@ def _generate_and_save_global_summary(target_dir: Path, abstract_files: list[Pat
     for abstract_file in abstract_files:
         try:
             abstract_markdowns.append(abstract_file.read_text(encoding="utf-8"))
-        except OSError as error:
-            console.print(f"[red]❌ Falha ao ler resumo '{abstract_file}':[/red] {error}")
+        except (OSError, UnicodeDecodeError) as error:
+            console.print(
+                f"[yellow]⚠️ Ignorando resumo não legível '{abstract_file}':[/yellow] {error}"
+            )
 
     if not abstract_markdowns:
         console.print("\n[yellow]⚠️ Nenhum resumo pôde ser lido para gerar o consolidado.[/yellow]")

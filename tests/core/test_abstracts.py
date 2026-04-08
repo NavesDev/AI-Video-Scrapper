@@ -42,6 +42,26 @@ def test_collect_abstracts_for_scope_selected_dir_uses_explicit_dir(tmp_path):
     assert collected == sorted([file_a, file_b])
 
 
+def test_collect_abstracts_for_scope_selected_dir_ignores_global_summary_outputs(tmp_path):
+    selected_dir = tmp_path / "session"
+    selected_dir.mkdir()
+    valid_abstract = selected_dir / "playlist.md"
+    generated_summary = selected_dir / "global-summary.md"
+    generated_summary_incremental = selected_dir / "global-summary-2.md"
+
+    valid_abstract.write_text("# Playlist", encoding="utf-8")
+    generated_summary.write_text("# Summary", encoding="utf-8")
+    generated_summary_incremental.write_text("# Summary 2", encoding="utf-8")
+
+    collected = collect_abstracts_for_scope(
+        current_session_dir=tmp_path / "unused-session",
+        scope="selected_dir",
+        explicit_dir=selected_dir,
+    )
+
+    assert collected == [valid_abstract]
+
+
 def test_collect_abstracts_for_scope_returns_empty_on_missing_or_invalid_inputs(tmp_path):
     session_dir = tmp_path / "session_10"
 

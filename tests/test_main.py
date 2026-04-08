@@ -101,3 +101,24 @@ def test_main_aggregate_selected_dir_uses_cli_directory_prompt(mocker, tmp_path)
     )
     generate_global_summary.assert_called_once_with(["# Item"], app_config=config)
     save_global_summary.assert_called_once_with(selected_dir, "# Selected")
+
+
+def test_generate_and_save_global_summary_skips_unreadable_non_utf8_file(mocker, tmp_path):
+    config = AppConfig()
+    readable = tmp_path / "ok.md"
+    unreadable = tmp_path / "bad.md"
+    readable.write_text("# Ok", encoding="utf-8")
+    unreadable.write_bytes(b"\x80\x81")
+
+    generate_global_summary = mocker.patch("main.generate_global_summary_from_abstracts", return_value="# Global")
+    save_global_summary = mocker.patch("main.save_global_summary", return_value=tmp_path / "global-summary.md")
+    console_print = mocker.patch("main.console.print")
+
+    main._generate_and_save_global_summary(tmp_path, [readable, unreadable], config)
+
+    generate_global_summary.assert_called_once_with(["# Ok"], app_config=config)
+    save_global_summary.assert_called_once_with(tmp_path, "# Global")
+    assert any(
+        "Ignorando resumo não legível" in str(call.args[0]) and "bad.md" in str(call.args[0])
+        for call in console_print.call_args_list
+    )
