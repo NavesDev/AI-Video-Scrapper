@@ -77,3 +77,19 @@ def save_abstract(session_dir: Path, markdown_content: str, title: str, playlist
     
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(markdown_content)
+
+
+def save_global_summary(target_dir: Path, markdown_content: str) -> Path:
+    """Grava resumo consolidado em Markdown no diretório alvo com nome incremental."""
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = target_dir / "global-summary.md"
+    counter = 2
+    while file_path.exists():
+        file_path = target_dir / f"global-summary-{counter}.md"
+        counter += 1
+
+    with open(file_path, "w", encoding="utf-8") as file_handler:
+        file_handler.write(markdown_content)
+
+    return file_path

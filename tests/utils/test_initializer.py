@@ -14,6 +14,9 @@ def test_setup_environment_creates_from_templates(tmp_path):
     
     sys_ex = tmp_path / "system_instruction.md.example"
     sys_ex.write_text("Hello Prompt")
+
+    config_ex = tmp_path / "config.example.json"
+    config_ex.write_text('{"gemini_model":"gemini-test"}')
     
     # Executa Bootloader silencioso para o ambiente
     setup_environment(base_dir=tmp_path, interactive=False)
@@ -27,6 +30,10 @@ def test_setup_environment_creates_from_templates(tmp_path):
     assert md_oficial.exists()
     assert md_oficial.read_text() == "Hello Prompt"
 
+    config_oficial = tmp_path / "config.json"
+    assert config_oficial.exists()
+    assert config_oficial.read_text() == '{"gemini_model":"gemini-test"}'
+
 def test_setup_environment_skips_if_exist(tmp_path):
     """Testa se o Bootloader respeita arquivos consolidados prévidados, nunca dando Overwrite cego."""
     env_ex = tmp_path / ".env.example"
@@ -34,11 +41,17 @@ def test_setup_environment_skips_if_exist(tmp_path):
     
     env_real = tmp_path / ".env"
     env_real.write_text("API_KEY=REAL")
+
+    cfg_example = tmp_path / "config.example.json"
+    cfg_example.write_text('{"gemini_model":"from-example"}')
+    cfg_real = tmp_path / "config.json"
+    cfg_real.write_text('{"gemini_model":"from-real"}')
     
     setup_environment(base_dir=tmp_path, interactive=False)
     
     # O output não pode ter sido modificado por template
     assert env_real.read_text() == "API_KEY=REAL"
+    assert cfg_real.read_text() == '{"gemini_model":"from-real"}'
     
 def test_setup_environment_skips_if_no_template(tmp_path):
     """Não deve quebrar nem tentar copiar se não existir fallback na sub-pasta .example."""

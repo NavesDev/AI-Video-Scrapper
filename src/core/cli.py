@@ -61,6 +61,17 @@ def get_links_from_file() -> list[str]:
 
     return []
 
+
+def get_summary_source_dir() -> Path | None:
+    """Solicita via CLI o diretório com resumos .md para agregação final."""
+    selected_path = questionary.path(
+        "Digite o caminho da pasta/sessão contendo os resumos Markdown:"
+    ).ask()
+    if not selected_path or not selected_path.strip():
+        return None
+    return Path(selected_path.strip()).expanduser()
+
+
 def run_cli():
     """Fluxo de execução central da interface via linha de comando."""
     show_header()
@@ -164,7 +175,12 @@ def show_single_video_progress(video_id: str, fetch_func) -> dict | None:
         console.print(f"[red]Erro ao consultar API do YouTube: {e}[/red]")
         return None
 
-def show_ai_generation_progress(videos: list[dict], playlist_name: str | None, session_dir: Path):
+def show_ai_generation_progress(
+    videos: list[dict],
+    playlist_name: str | None,
+    session_dir: Path,
+    app_config=None,
+):
     """
     Controla a exibição visual da IA. Se for 1 vídeo, mostra spinner simples. 
     Se for playlist, mostra barra de progresso numérica.
@@ -188,7 +204,7 @@ def show_ai_generation_progress(videos: list[dict], playlist_name: str | None, s
         url = f"https://www.youtube.com/watch?v={vid_id}"
         with console.status(f"[purple]Processando IA para vídeo único...[/purple] [cyan]{title[:40]}[/cyan]", spinner="aesthetic"):
             try:
-                md_resp = generate_video_summary(url, title, desc)
+                md_resp = generate_video_summary(url, title, desc, app_config=app_config)
                 save_abstract(session_dir, md_resp, title, playlist_name)
                 console.print(f"[bold green]✓ Resumo Gerado:[/bold green] {title}")
             except Exception as e:
@@ -220,7 +236,7 @@ def show_ai_generation_progress(videos: list[dict], playlist_name: str | None, s
             url = f"https://www.youtube.com/watch?v={vid_id}"
             
             try:
-                md_resp = generate_video_summary(url, title, desc)
+                md_resp = generate_video_summary(url, title, desc, app_config=app_config)
                 save_abstract(session_dir, md_resp, title, playlist_name)
                 progress.console.print(f"  [dim]↳ Arquivo salvo com sucesso:[/dim] [green]{title[:40]}...[/green]")
             except Exception as e:
