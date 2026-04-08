@@ -47,6 +47,30 @@ def fetch_playlist_title(playlist_id: str) -> str:
         
     return fallback_name
 
+def fetch_video_metadata(video_id: str) -> dict | None:
+    """Extrai os metadados (id, título, descrição) correspondente a um vídeo único via API."""
+    api_key = os.environ.get("YOUTUBE_API_KEY")
+    if not api_key:
+        raise ValueError("A chave YOUTUBE_API_KEY não foi encontrada nas variáveis de ambiente.")
+        
+    url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={api_key}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get("items", [])
+            if items:
+                snippet = items[0].get("snippet", {})
+                return {
+                    "video_id": video_id,
+                    "title": snippet.get("title", "Título indisponível"),
+                    "description": snippet.get("description", "")
+                }
+    except Exception as e:
+        pass
+        
+    return None
+
 def fetch_playlist_videos(playlist_id: str):
     """
     Consome a API oficial do YouTube para recuperar todos os vídeos de uma playlist.

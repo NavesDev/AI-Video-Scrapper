@@ -6,8 +6,8 @@ sys.path.append(str(Path(__file__).parent))
 
 from dotenv import load_dotenv
 
-from core.cli import run_cli, show_playlist_extraction_progress
-from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title
+from core.cli import run_cli, show_playlist_extraction_progress, show_single_video_progress
+from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title, fetch_video_metadata
 from utils.validators import get_youtube_url_type, YouTubeLinkType
 from rich.console import Console
 
@@ -37,8 +37,10 @@ def main():
                         
                     elif url_type == YouTubeLinkType.VIDEO:
                         video_id = extract_video_id(url)
-                        console.print(f"\n[cyan]🎬 Vídeo Simples Detectado:[/cyan] [bold]{video_id}[/bold]")
-                        # (Motor para Vídeo vindo em breve...)
+                        if video_id:
+                            video = show_single_video_progress(video_id, fetch_video_metadata)
+                        else:
+                            console.print(f"\n[red]❌ Erro ao extrair ID do vídeo na URL:[/red] {url}")
                         
                     else:
                         console.print(f"\n[red]❌ URL não processável nativamente:[/red] {url}")
