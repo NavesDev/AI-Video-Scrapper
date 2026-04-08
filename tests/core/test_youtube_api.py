@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 import pytest
 import os
 from unittest.mock import MagicMock
-from core.youtube_api import extract_playlist_id, extract_video_id, fetch_playlist_videos
+from core.youtube_api import extract_playlist_id, extract_video_id, fetch_playlist_videos, fetch_video_metadata
 
 def test_extract_playlist_id():
     # Playlist URL Explicita
@@ -77,3 +77,23 @@ def test_fetch_playlist_videos_paginado(mocker):
     # Esgota lista
     with pytest.raises(StopIteration):
         next(generator)
+
+def test_fetch_video_metadata(mocker):
+    mocker.patch.dict(os.environ, {"YOUTUBE_API_KEY": "fake_key_video"})
+    mock_requests = mocker.patch("requests.get")
+    
+    resposta_fake = MagicMock()
+    resposta_fake.status_code = 200
+    resposta_fake.json.return_value = {
+        "items": [
+            {"snippet": {"title": "Vid Titulo", "description": "Vid Desc"}}
+        ]
+    }
+    mock_requests.return_value = resposta_fake
+    
+    resultado = fetch_video_metadata("FAKE_VID_123")
+    
+    assert resultado is not None
+    assert resultado["video_id"] == "FAKE_VID_123"
+    assert resultado["title"] == "Vid Titulo"
+    assert resultado["description"] == "Vid Desc"
