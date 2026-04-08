@@ -80,3 +80,24 @@ def test_show_playlist_extraction_progress(mocker):
     
     assert mock_console.status.called
     assert mock_console.print.call_count > 0
+
+from core.cli import show_single_video_progress
+
+def test_show_single_video_progress(mocker):
+    """Testa a exibição visual de vídeo único importando Dicts estáticos."""
+    mock_console = mocker.patch("core.cli.console")
+    
+    def fetch_mock(vid):
+        if vid == "GOOD":
+            return {"video_id": vid, "title": "Titulo de Video Simples Bem Grande Pra Testar o Layout Se Necessario", "description": "Desc"}
+        return None
+        
+    resultado_bom = show_single_video_progress("GOOD", fetch_mock)
+    assert resultado_bom is not None
+    assert resultado_bom["video_id"] == "GOOD"
+    assert mock_console.status.called
+    assert mock_console.print.called
+    
+    # Falha
+    resultado_ruim = show_single_video_progress("BAD", fetch_mock)
+    assert resultado_ruim is None
