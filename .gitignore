@@ -21,3 +21,6 @@ venv/
 
 # Output
 data/
+
+# User files
+system_instruction.md
