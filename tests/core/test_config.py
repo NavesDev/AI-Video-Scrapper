@@ -41,6 +41,16 @@ def test_load_app_config_returns_defaults_when_missing_file(tmp_path):
     assert config.bilingual_mode is True
 
 
+def test_load_app_config_returns_defaults_when_path_is_directory(tmp_path):
+    config = load_app_config(tmp_path)
+
+    assert config.gemini_model == "gemini-3-flash-preview"
+    assert config.temperature == 0.3
+    assert config.max_retries_429 == 6
+    assert config.retry_base_seconds == 2
+    assert config.bilingual_mode is True
+
+
 def test_load_app_config_converts_numeric_and_bool_values(tmp_path):
     config_path = tmp_path / "config.json"
     config_path.write_text(
