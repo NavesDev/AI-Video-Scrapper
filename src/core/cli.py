@@ -5,6 +5,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from utils.file_parser import parse_links_from_file
+from utils.validators import is_valid_youtube_url
 
 console = Console()
 
@@ -19,7 +20,10 @@ def show_header():
 
 def get_single_link() -> list[str]:
     """Coleta um único link do usuário."""
-    link = questionary.text("Cole o link do YouTube (Vídeo ou Playlist):").ask()
+    link = questionary.text(
+        "Cole o link do YouTube (Vídeo ou Playlist):",
+        validate=lambda text: is_valid_youtube_url(text) or "Por favor, insira um link válido do YouTube."
+    ).ask()
     if link and link.strip():
         return [link.strip()]
     return []
@@ -29,7 +33,10 @@ def get_multiple_links_manually() -> list[str]:
     console.print("[yellow]Cole um link por vez e pressione ENTER. Pressione ENTER com o campo vazio para finalizar.[/yellow]")
     links = []
     while True:
-        link = questionary.text(f"Link {len(links) + 1} (vazio para encerrar):").ask()
+        link = questionary.text(
+            f"Link {len(links) + 1} (vazio para encerrar):",
+            validate=lambda text: True if not text.strip() else (is_valid_youtube_url(text) or "Link inválido. Informe uma URL do YouTube.")
+        ).ask()
         if not link or not link.strip():
             break
         links.append(link.strip())
@@ -80,14 +87,21 @@ def run_cli():
     elif choice.startswith("3"):
         urls_to_process = get_links_from_file()
 
+    # Validação rigorosa dos links coletados (especialmente para arquivos)
+    valid_urls = [u for u in urls_to_process if is_valid_youtube_url(u)]
+    invalid_count = len(urls_to_process) - len(valid_urls)
+    
+    if invalid_count > 0:
+        console.print(f"\n[yellow]⚠️ Foram filtrados e ignorados {invalid_count} link(s) inválido(s).[/yellow]")
+
     # Feedback para o usuário sobre a coleta dos links
-    if urls_to_process:
-        console.print(f"\n[bold green]✅ Sucesso![/bold green] Foi coletado um total de [bold cyan]{len(urls_to_process)}[/bold cyan] link(s).")
-        for idx, url in enumerate(urls_to_process, 1):
+    if valid_urls:
+        console.print(f"\n[bold green]✅ Sucesso![/bold green] Foi coletado um total de [bold cyan]{len(valid_urls)}[/bold cyan] link(s) válido(s).")
+        for idx, url in enumerate(valid_urls, 1):
             console.print(f"  [dim]{idx}.[/dim] {url}")
         
         # O retorno dessa função poderia ser utilizado pelo core (scraper real) na main.py
-        return urls_to_process
+        return valid_urls
     else:
-        console.print("\n[yellow]⚠️ Nenhum link foi inserido.[/yellow]")
+        console.print("\n[yellow]⚠️ Nenhum link válido foi inserido.[/yellow]")
         return []
