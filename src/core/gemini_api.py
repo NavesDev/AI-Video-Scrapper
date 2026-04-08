@@ -1,4 +1,5 @@
 import os
+import time
 import warnings
 from pathlib import Path
 
@@ -6,6 +7,8 @@ from pathlib import Path
 warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
 
 import google.generativeai as genai
+from core.config import AppConfig
+from core.retry import exponential_backoff_seconds, is_rate_limit_error
 
 def _load_system_instruction() -> str:
     """Busca o System Prompt na pasta raiz, servindo como persona de IA restrita."""
@@ -15,7 +18,12 @@ def _load_system_instruction() -> str:
         return sys_file.read_text(encoding="utf-8")
     return "Inspecione cuidadosamente esse vídeo e me traga um resumo com conhecimentos chave."
 
-def generate_video_summary(video_url: str, video_title: str, video_description: str) -> str:
+def generate_video_summary(
+    video_url: str,
+    video_title: str,
+    video_description: str,
+    app_config: AppConfig | None = None,
+) -> str:
     """
     Consome o `gemini-3-pro` aplicando as regras sistêmicas do diretório.
     Fornece máxima autonomia pra Engine gerar seu próprio texto Markdown sem Pydatinc Structs forçados,
@@ -24,21 +32,39 @@ def generate_video_summary(video_url: str, video_title: str, video_description: 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("A chave GEMINI_API_KEY não foi encontrada ou está vazia.")
-        
+
+    config = app_config or AppConfig()
     genai.configure(api_key=api_key.strip())
-    
+
     instruction = _load_system_instruction()
-    
+
     model = genai.GenerativeModel(
-        model_name="gemini-3-flash-preview", 
+        model_name=config.gemini_model,
         system_instruction=instruction,
-        generation_config={"temperature": 0.3} # Temperatura controlada pra zero alucinações e respostas cruas e diretas
+        generation_config={"temperature": config.temperature} # Temperatura controlada pra zero alucinações e respostas cruas e diretas
     )
-    
+
     prompt = f"Siga restritamente suas instruções de sistema. Acesse o conteúdo do link deste vídeo abaixo e analise seu conteúdo principal. \n\nURL do YouTube: {video_url}\nTítulo de Busca: {video_title}\nDescrição Resumida:\n{video_description}"
-    
-    try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"## Ocorreu um Erro Crítico de Extração de IA\n\nA engine do Gemini não conseguiu ler a requisição.\nMotivo Técnico: `{str(e)}`"
+
+    max_attempts = config.max_retries_429 + 1
+    for attempt_index in range(max_attempts):
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as error:
+            if is_rate_limit_error(error):
+                if attempt_index < config.max_retries_429:
+                    delay_seconds = exponential_backoff_seconds(
+                        attempt_number=attempt_index + 1,
+                        base_seconds=config.retry_base_seconds,
+                    )
+                    time.sleep(delay_seconds)
+                    continue
+
+                raise RuntimeError(
+                    f"Falha ao gerar resumo com Gemini após {config.max_retries_429} retries por limite de taxa."
+                ) from error
+
+            raise RuntimeError("Falha ao gerar resumo com Gemini: erro não recuperável.") from error
+
+    raise RuntimeError("Falha ao gerar resumo com Gemini: fluxo de retry inválido.")
