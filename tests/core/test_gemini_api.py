@@ -106,3 +106,15 @@ def test_generate_global_summary_from_abstracts_requires_api_key(mocker):
 
     with pytest.raises(ValueError, match="GEMINI_API_KEY"):
         generate_global_summary_from_abstracts(["# Resumo"]) 
+
+
+def test_generate_global_summary_from_abstracts_rejects_empty_abstracts_without_api_calls(mocker):
+    mocker.patch.dict("os.environ", {"GEMINI_API_KEY": "AIza_fake"})
+    mock_configure = mocker.patch("core.gemini_api.genai.configure")
+    mock_model = mocker.patch("core.gemini_api.genai.GenerativeModel")
+
+    with pytest.raises(ValueError, match="Lista de resumos vazia"):
+        generate_global_summary_from_abstracts([])
+
+    mock_configure.assert_not_called()
+    mock_model.assert_not_called()
