@@ -7,6 +7,17 @@ class YouTubeLinkType(Enum):
     PLAYLIST = auto()
     UNKNOWN = auto()
 
+
+GEMINI_API_KEY_PATTERN = re.compile(r"^AIza[A-Za-z0-9_-]{35}$")
+
+
+def is_valid_gemini_api_key(api_key: str) -> bool:
+    """Valida formato estrito da GEMINI_API_KEY gerada pelo Google AI Studio."""
+    if not api_key or not isinstance(api_key, str):
+        return False
+
+    return bool(GEMINI_API_KEY_PATTERN.match(api_key.strip()))
+
 def is_valid_youtube_url(url: str) -> bool:
     """
     Valida se uma string é uma URL válida do YouTube (Vídeo, Playlist ou Shorts).

@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
@@ -54,14 +55,28 @@ def test_verify_api_keys_interactive(mocker, tmp_path):
     
     # Mocks do questionary simulando digitação
     mock_ask = mocker.patch("questionary.password")
-    mock_ask.return_value.ask.side_effect = ["abc_gemini_123", "xyz_youtube_999"]
+    mock_ask.return_value.ask.side_effect = [
+        "AIza12345678901234567890123456789012345",
+        "xyz_youtube_999",
+    ]
     
     # Executa com interactivo ativado explicitamente
     setup_environment(base_dir=tmp_path, interactive=True)
     
     # Lendo final para avaliar injeções do dotenv
     linhas = env_real.read_text()
-    assert "abc_gemini_123" in linhas
+    assert "AIza12345678901234567890123456789012345" in linhas
     assert "xyz_youtube_999" in linhas
     assert "GEMINI_API_KEY" in linhas
     assert "YOUTUBE_API_KEY" in linhas
+
+
+def test_verify_api_keys_rejects_invalid_gemini_key(mocker, tmp_path):
+    """Token Gemini inválido deve gerar erro explícito e não ser salvo."""
+    env_real = tmp_path / ".env"
+    env_real.touch()
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = ["short_token"]
+
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        setup_environment(base_dir=tmp_path, interactive=True)
