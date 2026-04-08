@@ -4,20 +4,44 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
-from core.cli import run_cli
+from dotenv import load_dotenv
+
+from core.cli import run_cli, show_playlist_extraction_progress
+from core.youtube_api import extract_playlist_id, fetch_playlist_videos, extract_video_id, fetch_playlist_title
+from utils.validators import get_youtube_url_type, YouTubeLinkType
 from rich.console import Console
 
 console = Console()
 
 def main():
+    # Carrega variáveis de ambiente como do .env (necessário para YOUTUBE_API_KEY)
+    load_dotenv()
+    
     try:
         while True:
             # A CLI retorna as urls coletadas
             urls = run_cli()
             
             if urls:
-                # TODO: Inicializar o pipeline do Scraper da pasta core aqui.
-                pass
+                console.print("\n[dim]Analisando links e processando rotas...[/dim]")
+                for url in urls:
+                    url_type = get_youtube_url_type(url)
+                    
+                    if url_type == YouTubeLinkType.PLAYLIST:
+                        playlist_id = extract_playlist_id(url)
+                        # Descobre o nome real da playlist usando API
+                        playlist_name = fetch_playlist_title(playlist_id)
+                        
+                        # Toda regra de interface de carregamento está isolada na CLI
+                        videos = show_playlist_extraction_progress(playlist_id, playlist_name, fetch_playlist_videos)
+                        
+                    elif url_type == YouTubeLinkType.VIDEO:
+                        video_id = extract_video_id(url)
+                        console.print(f"\n[cyan]🎬 Vídeo Simples Detectado:[/cyan] [bold]{video_id}[/bold]")
+                        # (Motor para Vídeo vindo em breve...)
+                        
+                    else:
+                        console.print(f"\n[red]❌ URL não processável nativamente:[/red] {url}")
                 
             console.input("\n[dim]Pressione ENTER para voltar ao menu principal...[/dim]")
             

@@ -1,5 +1,11 @@
 import re
+from enum import Enum, auto
 from urllib.parse import urlparse, parse_qs
+
+class YouTubeLinkType(Enum):
+    VIDEO = auto()
+    PLAYLIST = auto()
+    UNKNOWN = auto()
 
 def is_valid_youtube_url(url: str) -> bool:
     """
@@ -46,3 +52,26 @@ def is_valid_youtube_url(url: str) -> bool:
         return False
         
     return False
+
+def get_youtube_url_type(url: str) -> YouTubeLinkType:
+    """Classifica a URL rigidamente apontando a Enum 'VIDEO', 'PLAYLIST' ou 'UNKNOWN'."""
+    try:
+        parsed = urlparse(url.strip())
+        domain = parsed.netloc.lower()
+        path = parsed.path.lower()
+        query = parse_qs(parsed.query)
+        
+        if 'youtu.be' in domain and len(path) > 1:
+            return YouTubeLinkType.VIDEO
+            
+        if 'youtube.com' in domain:
+            if path == '/watch' and 'v' in query:
+                return YouTubeLinkType.VIDEO
+            if path == '/playlist' and 'list' in query:
+                return YouTubeLinkType.PLAYLIST
+            if path.startswith('/shorts/') and len(path) > 8:
+                return YouTubeLinkType.VIDEO
+    except Exception:
+        pass
+        
+    return YouTubeLinkType.UNKNOWN

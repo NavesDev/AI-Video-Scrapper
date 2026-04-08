@@ -105,3 +105,24 @@ def run_cli():
     else:
         console.print("\n[yellow]⚠️ Nenhum link válido foi inserido.[/yellow]")
         return []
+
+def show_playlist_extraction_progress(playlist_id: str, playlist_name: str, fetch_generator) -> list[dict]:
+    """Exibe o status visual da extração de uma playlist na CLI."""
+    console.print(f"\n[cyan]🗂️ Playlist:[/cyan] [bold]{playlist_name}[/bold] [dim]({playlist_id})[/dim]")
+    videos = []
+    try:
+        # Usa um 'status' loader do rich enquanto puxa dados em cascata
+        with console.status("[bold green]Conectando com o YouTube...[/bold green]", spinner="dots") as status:
+            for video_batch in fetch_generator(playlist_id):
+                for v in video_batch:
+                    videos.append(v)
+                    # Diminui p/ max 60 chars para não estourar o layout
+                    short_title = v['title'][:60] + "..." if len(v['title']) > 60 else v['title']
+                    console.print(f"  [dim]📥 Extraído:[/dim] {short_title}")
+                    status.update(f"[bold green]Puxando mais vídeos... ({len(videos)} processados)[/bold green]")
+        
+        console.print(f"\n[bold green]✓ Sucesso! Total de {len(videos)} vídeos capturados de forma estruturada![/bold green]")
+        return videos
+    except Exception as e:
+        console.print(f"[red]Erro ao extrair metadados da playlist: {e}[/red]")
+        return []
