@@ -162,3 +162,19 @@ def test_main_handles_setup_environment_value_error_without_traceback(mocker):
         "Erro de inicialização" in str(call.args[0]) and "GEMINI_API_KEY é obrigatória." in str(call.args[0])
         for call in console_print.call_args_list
     )
+
+
+def test_main_handles_setup_environment_os_error_without_traceback(mocker):
+    mocker.patch("main.setup_environment", side_effect=OSError("Permissão negada ao acessar .env"))
+    load_dotenv = mocker.patch("main.load_dotenv")
+    console_print = mocker.patch("main.console.print")
+    mocker.patch("main.sys.exit", side_effect=SystemExit(1))
+
+    with pytest.raises(SystemExit):
+        main.main()
+
+    load_dotenv.assert_not_called()
+    assert any(
+        "Erro de inicialização" in str(call.args[0]) and "Permissão negada ao acessar .env" in str(call.args[0])
+        for call in console_print.call_args_list
+    )

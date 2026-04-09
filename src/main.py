@@ -138,7 +138,7 @@ def main():
     except KeyboardInterrupt:
         console.print("\n[dim]Aplicação encerrada pelo usuário.[/dim]")
         sys.exit(0)
-    except ValueError as error:
+    except (ValueError, OSError) as error:
         console.print(f"\n[red]❌ Erro de inicialização:[/red] {error}")
         sys.exit(1)
 
