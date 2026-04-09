@@ -26,20 +26,19 @@ def verify_api_keys(base_dir: Path):
         console.print("Obtenha sua chave gratuitamente em: [blue]https://aistudio.google.com/api-keys[/blue]")
         
         token = questionary.password("Coloque sua GEMINI_API_KEY aqui:").ask()
-        if token:
-            token = token.strip()
-            if not is_valid_gemini_api_key(token):
-                raise ValueError(
-                    "Formato inválido para GEMINI_API_KEY. "
-                    "Use uma chave válida do Google AI Studio (ex.: começa com 'AIza')."
-                )
-            set_key(env_file, "GEMINI_API_KEY", token, quote_mode="always")
-            console.print("[green]✓ Chave do Gemini salva no .env![/green]")
-        elif gemini_key and not gemini_key_is_valid:
+        token = token.strip() if token else ""
+        if not token:
+            raise ValueError(
+                "GEMINI_API_KEY é obrigatória. "
+                "Informe uma chave válida do Google AI Studio (ex.: começa com 'AIza')."
+            )
+        if not is_valid_gemini_api_key(token):
             raise ValueError(
                 "Formato inválido para GEMINI_API_KEY. "
                 "Use uma chave válida do Google AI Studio (ex.: começa com 'AIza')."
             )
+        set_key(env_file, "GEMINI_API_KEY", token, quote_mode="always")
+        console.print("[green]✓ Chave do Gemini salva no .env![/green]")
             
     youtube_key = get_key(env_file, "YOUTUBE_API_KEY")
     if not youtube_key or youtube_key.strip() == "":
