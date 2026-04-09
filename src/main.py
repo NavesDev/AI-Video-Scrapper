@@ -73,7 +73,7 @@ def main():
                     abstract_files = collect_abstracts_for_scope(session_dir, scope="current_run")
                     _generate_and_save_global_summary(session_dir, abstract_files, app_config)
                 elif action == "aggregate_selected_dir":
-                    selected_dir = get_summary_source_dir()
+                    selected_dir = get_summary_source_dir(bool(getattr(app_config, "bilingual_mode", True)))
                     if selected_dir is None:
                         console.print("\n[yellow]⚠️ Nenhum diretório informado para agregação.[/yellow]")
                     else:

@@ -106,3 +106,14 @@ def test_verify_api_keys_rejects_existing_invalid_gemini_key(mocker, tmp_path):
         setup_environment(base_dir=tmp_path, interactive=True)
 
     assert mock_ask.call_count == 1
+
+
+def test_verify_api_keys_requires_gemini_key_when_missing(mocker, tmp_path):
+    """Sem GEMINI_API_KEY, entrada vazia deve falhar com erro claro."""
+    env_real = tmp_path / ".env"
+    env_real.write_text('YOUTUBE_API_KEY="yt_key"\n')
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = [""]
+
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        setup_environment(base_dir=tmp_path, interactive=True)

@@ -32,6 +32,16 @@ def test_get_single_link_vazio(mocker):
     links = get_single_link()
     assert links == []
 
+def test_get_single_link_prompt_respects_bilingual_mode(mocker):
+    mock_ask = mocker.patch("questionary.text")
+    mock_ask.return_value.ask.return_value = ""
+
+    get_single_link(True)
+    get_single_link(False)
+
+    assert mock_ask.call_args_list[0].args[0] == "Paste the YouTube link (Video or Playlist): / Cole o link do YouTube (Vídeo ou Playlist):"
+    assert mock_ask.call_args_list[1].args[0] == "Cole o link do YouTube (Vídeo ou Playlist):"
+
 def test_get_multiple_links_manually(mocker):
     """Testa o loop de obtenção manual, encerrando com string vazia."""
     # Lista de retornos sequenciais para mock_ask
@@ -41,6 +51,29 @@ def test_get_multiple_links_manually(mocker):
     
     links = get_multiple_links_manually()
     assert links == ["link1", "link2"]
+
+def test_get_links_from_file_prompt_respects_bilingual_mode(mocker):
+    mock_path = mocker.patch("questionary.path")
+    mock_path.return_value.ask.return_value = ""
+
+    from core.cli import get_links_from_file
+    get_links_from_file(True)
+    get_links_from_file(False)
+
+    assert mock_path.call_args_list[0].args[0] == "Enter the file path (.txt, .json, .csv): / Digite o caminho do arquivo (.txt, .json, .csv):"
+    assert mock_path.call_args_list[1].args[0] == "Digite o caminho do arquivo (.txt, .json, .csv):"
+
+def test_run_cli_passes_bilingual_mode_to_helpers(mocker):
+    mock_select = mocker.patch("questionary.select")
+    mock_select.return_value.ask.side_effect = [
+        "1. Ingest links and generate summaries / Ingerir links e gerar resumos",
+        "1. Insert a single link / Inserir um único link",
+    ]
+    helper = mocker.patch("core.cli.get_single_link", return_value=["https://www.youtube.com/watch?v=123"])
+
+    run_cli(True)
+
+    helper.assert_called_once_with(True)
 
 def test_run_cli_rota_link_unico(mocker):
     """Testa se o fluxo de ingestão redireciona para link único e o retorna."""
@@ -139,6 +172,16 @@ def test_get_summary_source_dir_returns_none_for_empty_input(mocker):
     result = get_summary_source_dir()
 
     assert result is None
+
+def test_get_summary_source_dir_prompt_respects_bilingual_mode(mocker):
+    mock_path = mocker.patch("questionary.path")
+    mock_path.return_value.ask.return_value = ""
+
+    get_summary_source_dir(True)
+    get_summary_source_dir(False)
+
+    assert mock_path.call_args_list[0].args[0] == "Enter the folder/session path containing Markdown summaries: / Digite o caminho da pasta/sessão contendo os resumos Markdown:"
+    assert mock_path.call_args_list[1].args[0] == "Digite o caminho da pasta/sessão contendo os resumos Markdown:"
 
 def test_show_playlist_extraction_progress(mocker):
     """Testa a extração interativa CLI simulando o console rich e o gerador de chunks em API."""

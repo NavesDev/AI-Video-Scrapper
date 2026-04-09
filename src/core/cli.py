@@ -37,33 +37,64 @@ def show_header(app_config=None):
     console.print(panel)
     console.print()
 
-def get_single_link() -> list[str]:
+def get_single_link(bilingual_mode: bool = True) -> list[str]:
     """Coleta um único link do usuário."""
+    prompt = (
+        "Paste the YouTube link (Video or Playlist): / Cole o link do YouTube (Vídeo ou Playlist):"
+        if bilingual_mode else
+        "Cole o link do YouTube (Vídeo ou Playlist):"
+    )
+    error_message = (
+        "Please provide a valid YouTube URL. / Por favor, insira um link válido do YouTube."
+        if bilingual_mode else
+        "Por favor, insira um link válido do YouTube."
+    )
     link = questionary.text(
-        "Cole o link do YouTube (Vídeo ou Playlist):",
-        validate=lambda text: is_valid_youtube_url(text) or "Por favor, insira um link válido do YouTube."
+        prompt,
+        validate=lambda text: is_valid_youtube_url(text) or error_message
     ).ask()
     if link and link.strip():
         return [link.strip()]
     return []
 
-def get_multiple_links_manually() -> list[str]:
+def get_multiple_links_manually(bilingual_mode: bool = True) -> list[str]:
     """Coleta múltiplos links interativamente até o usuário enviar uma entrada vazia."""
-    console.print("[yellow]Cole um link por vez e pressione ENTER. Pressione ENTER com o campo vazio para finalizar.[/yellow]")
+    intro_message = (
+        "[yellow]Paste one link at a time and press ENTER. Press ENTER on an empty input to finish. / "
+        "Cole um link por vez e pressione ENTER. Pressione ENTER com o campo vazio para finalizar.[/yellow]"
+        if bilingual_mode else
+        "[yellow]Cole um link por vez e pressione ENTER. Pressione ENTER com o campo vazio para finalizar.[/yellow]"
+    )
+    prompt_template = (
+        "Link {index} (empty to finish) / Link {index} (vazio para encerrar):"
+        if bilingual_mode else
+        "Link {index} (vazio para encerrar):"
+    )
+    invalid_message = (
+        "Invalid link. Provide a valid YouTube URL. / Link inválido. Informe uma URL do YouTube."
+        if bilingual_mode else
+        "Link inválido. Informe uma URL do YouTube."
+    )
+    console.print(intro_message)
     links = []
     while True:
         link = questionary.text(
-            f"Link {len(links) + 1} (vazio para encerrar):",
-            validate=lambda text: True if not text.strip() else (is_valid_youtube_url(text) or "Link inválido. Informe uma URL do YouTube.")
+            prompt_template.format(index=len(links) + 1),
+            validate=lambda text: True if not text.strip() else (is_valid_youtube_url(text) or invalid_message)
         ).ask()
         if not link or not link.strip():
             break
         links.append(link.strip())
     return links
 
-def get_links_from_file() -> list[str]:
+def get_links_from_file(bilingual_mode: bool = True) -> list[str]:
     """Coleta links a partir de um arquivo local (.txt, .json, .csv) com tratamento de erros."""
-    file_path = questionary.path("Digite o caminho do arquivo (.txt, .json, .csv):").ask()
+    prompt = (
+        "Enter the file path (.txt, .json, .csv): / Digite o caminho do arquivo (.txt, .json, .csv):"
+        if bilingual_mode else
+        "Digite o caminho do arquivo (.txt, .json, .csv):"
+    )
+    file_path = questionary.path(prompt).ask()
     if not file_path:
         return []
     
@@ -71,17 +102,28 @@ def get_links_from_file() -> list[str]:
         links = parse_links_from_file(file_path)
         return links
     except FileNotFoundError as e:
-        console.print(f"[red]Erro:[/red] {e}")
+        message = f"[red]Error / Erro:[/red] {e}" if bilingual_mode else f"[red]Erro:[/red] {e}"
+        console.print(message)
     except Exception as e:
-        console.print(f"[red]Ocorreu um erro ao ler o arquivo:[/red] {e}")
+        message = (
+            f"[red]An error occurred while reading the file / Ocorreu um erro ao ler o arquivo:[/red] {e}"
+            if bilingual_mode else
+            f"[red]Ocorreu um erro ao ler o arquivo:[/red] {e}"
+        )
+        console.print(message)
 
     return []
 
 
-def get_summary_source_dir() -> Path | None:
+def get_summary_source_dir(bilingual_mode: bool = True) -> Path | None:
     """Solicita via CLI o diretório com resumos .md para agregação final."""
-    selected_path = questionary.path(
+    prompt = (
+        "Enter the folder/session path containing Markdown summaries: / Digite o caminho da pasta/sessão contendo os resumos Markdown:"
+        if bilingual_mode else
         "Digite o caminho da pasta/sessão contendo os resumos Markdown:"
+    )
+    selected_path = questionary.path(
+        prompt
     ).ask()
     if not selected_path or not selected_path.strip():
         return None
@@ -162,11 +204,11 @@ def run_cli(app_config=None):
         console.print(cancel_message)
         return []
     if choice.startswith("1"):
-        urls_to_process = get_single_link()
+        urls_to_process = get_single_link(bilingual_mode)
     elif choice.startswith("2"):
-        urls_to_process = get_multiple_links_manually()
+        urls_to_process = get_multiple_links_manually(bilingual_mode)
     elif choice.startswith("3"):
-        urls_to_process = get_links_from_file()
+        urls_to_process = get_links_from_file(bilingual_mode)
 
     # Validação rigorosa dos links coletados (especialmente para arquivos)
     valid_urls = [u for u in urls_to_process if is_valid_youtube_url(u)]
