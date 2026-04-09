@@ -52,15 +52,16 @@ def _generate_and_save_global_summary(target_dir: Path, abstract_files: list[Pat
 
 
 def main():
-    # Prepara arquivos esqueleto automaticamente pro usuário se ele não preencheu/criou
-    setup_environment()
-    
-    # Carrega variáveis de ambiente como do .env (necessário para YOUTUBE_API_KEY)
-    load_dotenv()
-    base_dir = Path(__file__).resolve().parent.parent
-    app_config = load_app_config(base_dir / "config.json")
-    bilingual_mode = bool(getattr(app_config, "bilingual_mode", True))
     try:
+        # Prepara arquivos esqueleto automaticamente pro usuário se ele não preencheu/criou
+        setup_environment()
+
+        # Carrega variáveis de ambiente dando prioridade ao .env sobre variáveis já exportadas no shell
+        load_dotenv(override=True)
+        base_dir = Path(__file__).resolve().parent.parent
+        app_config = load_app_config(base_dir / "config.json")
+        bilingual_mode = bool(getattr(app_config, "bilingual_mode", True))
+
         # Inicializa o diretório /data/session_N desta sessão
         session_dir = init_session_dir()
         console.print(f"[dim]📁 Repositório da sessão salvo em: {session_dir.relative_to(session_dir.parent.parent)}[/dim]\n")
@@ -137,6 +138,9 @@ def main():
     except KeyboardInterrupt:
         console.print("\n[dim]Aplicação encerrada pelo usuário.[/dim]")
         sys.exit(0)
+    except ValueError as error:
+        console.print(f"\n[red]❌ Erro de inicialização:[/red] {error}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

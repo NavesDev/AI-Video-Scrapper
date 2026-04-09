@@ -131,3 +131,34 @@ def test_generate_and_save_global_summary_skips_unreadable_non_utf8_file(mocker,
         "Ignorando resumo não legível" in str(call.args[0]) and "bad.md" in str(call.args[0])
         for call in console_print.call_args_list
     )
+
+
+def test_main_load_dotenv_prioritizes_env_file_values(mocker):
+    setup_environment = mocker.patch("main.setup_environment")
+    load_dotenv = mocker.patch("main.load_dotenv")
+    mocker.patch("main.load_app_config", return_value=AppConfig())
+    mocker.patch("main.init_session_dir", side_effect=KeyboardInterrupt())
+    mocker.patch("main.console.print")
+    mocker.patch("main.sys.exit", side_effect=SystemExit(0))
+
+    with pytest.raises(SystemExit):
+        main.main()
+
+    setup_environment.assert_called_once_with()
+    load_dotenv.assert_called_once_with(override=True)
+
+
+def test_main_handles_setup_environment_value_error_without_traceback(mocker):
+    mocker.patch("main.setup_environment", side_effect=ValueError("GEMINI_API_KEY é obrigatória."))
+    load_dotenv = mocker.patch("main.load_dotenv")
+    console_print = mocker.patch("main.console.print")
+    mocker.patch("main.sys.exit", side_effect=SystemExit(1))
+
+    with pytest.raises(SystemExit):
+        main.main()
+
+    load_dotenv.assert_not_called()
+    assert any(
+        "Erro de inicialização" in str(call.args[0]) and "GEMINI_API_KEY é obrigatória." in str(call.args[0])
+        for call in console_print.call_args_list
+    )
