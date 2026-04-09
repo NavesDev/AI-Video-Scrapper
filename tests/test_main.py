@@ -13,7 +13,7 @@ from utils.validators import YouTubeLinkType
 def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
     session_dir = tmp_path / "session_1"
     session_dir.mkdir()
-    config = AppConfig(gemini_model="gemini-3-pro", max_retries_429=9)
+    config = AppConfig(gemini_model="gemini-3-pro", max_retries_429=9, bilingual_mode=False)
 
     mocker.patch("main.setup_environment")
     mocker.patch("main.load_dotenv")
@@ -22,9 +22,15 @@ def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
     mocker.patch("main.get_youtube_url_type", side_effect=[YouTubeLinkType.PLAYLIST, YouTubeLinkType.VIDEO])
     mocker.patch("main.extract_playlist_id", return_value="pl123")
     mocker.patch("main.fetch_playlist_title", return_value="Playlist Name")
-    mocker.patch("main.show_playlist_extraction_progress", return_value=[{"video_id": "A", "title": "A", "description": ""}])
+    show_playlist_extraction_progress = mocker.patch(
+        "main.show_playlist_extraction_progress",
+        return_value=[{"video_id": "A", "title": "A", "description": ""}],
+    )
     mocker.patch("main.extract_video_id", return_value="vid456")
-    mocker.patch("main.show_single_video_progress", return_value={"video_id": "vid456", "title": "Single", "description": ""})
+    show_single_video_progress = mocker.patch(
+        "main.show_single_video_progress",
+        return_value={"video_id": "vid456", "title": "Single", "description": ""},
+    )
     append_extraction = mocker.patch("main.append_extraction")
     show_ai_generation_progress = mocker.patch("main.show_ai_generation_progress")
     run_cli = mocker.patch("main.run_cli", side_effect=[["playlist-url", "video-url"], KeyboardInterrupt()])
@@ -39,6 +45,8 @@ def test_main_ingestion_route_keeps_flow_and_passes_config(mocker, tmp_path):
     assert show_ai_generation_progress.call_count == 2
     assert show_ai_generation_progress.call_args_list[0].kwargs["app_config"] == config
     assert show_ai_generation_progress.call_args_list[1].kwargs["app_config"] == config
+    assert show_playlist_extraction_progress.call_args_list[0].kwargs["bilingual_mode"] is False
+    assert show_single_video_progress.call_args_list[0].kwargs["bilingual_mode"] is False
 
 
 def test_main_aggregate_current_run_generates_global_summary(mocker, tmp_path):

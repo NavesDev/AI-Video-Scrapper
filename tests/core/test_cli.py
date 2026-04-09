@@ -12,6 +12,7 @@ from core.cli import (
     run_cli,
     show_header,
     show_playlist_extraction_progress,
+    show_single_video_progress,
 )
 from unittest.mock import MagicMock
 
@@ -204,8 +205,6 @@ def test_show_playlist_extraction_progress(mocker):
     assert mock_console.status.called
     assert mock_console.print.call_count > 0
 
-from core.cli import show_single_video_progress
-
 def test_show_single_video_progress(mocker):
     """Testa a exibição visual de vídeo único importando Dicts estáticos."""
     mock_console = mocker.patch("core.cli.console")
@@ -224,3 +223,18 @@ def test_show_single_video_progress(mocker):
     # Falha
     resultado_ruim = show_single_video_progress("BAD", fetch_mock)
     assert resultado_ruim is None
+
+
+def test_show_single_video_progress_runtime_texts_respect_bilingual_mode(mocker):
+    mock_console = mocker.patch("core.cli.console")
+
+    def fetch_mock(_):
+        return None
+
+    show_single_video_progress("BAD", fetch_mock, bilingual_mode=True)
+    show_single_video_progress("BAD", fetch_mock, bilingual_mode=False)
+
+    assert mock_console.status.call_args_list[0].args[0] == "[bold green]Connecting to YouTube and loading video... / Conectando com YouTube e buscando vídeo...[/bold green]"
+    assert mock_console.status.call_args_list[1].args[0] == "[bold green]Conectando com YouTube e buscando vídeo...[/bold green]"
+    assert mock_console.print.call_args_list[0].args[0] == "[red]⚠️ Could not load video metadata: BAD / Não foi possível carregar os metadados do vídeo: BAD[/red]"
+    assert mock_console.print.call_args_list[1].args[0] == "[red]⚠️ Não foi possível carregar os metadados do vídeo: BAD[/red]"

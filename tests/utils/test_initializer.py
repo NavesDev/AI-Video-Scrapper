@@ -117,3 +117,33 @@ def test_verify_api_keys_requires_gemini_key_when_missing(mocker, tmp_path):
 
     with pytest.raises(ValueError, match="GEMINI_API_KEY"):
         setup_environment(base_dir=tmp_path, interactive=True)
+
+
+def test_verify_api_keys_requires_gemini_when_env_and_template_missing(mocker, tmp_path):
+    """Sem .env e .env.example, setup interativo não pode pular validação da GEMINI_API_KEY."""
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = [""]
+
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        setup_environment(base_dir=tmp_path, interactive=True)
+
+    assert (tmp_path / ".env").exists()
+    assert mock_ask.call_count == 1
+
+
+def test_setup_environment_creates_env_and_saves_keys_without_templates(mocker, tmp_path):
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = [
+        "AIza12345678901234567890123456789012345",
+        "yt_key_123",
+    ]
+
+    setup_environment(base_dir=tmp_path, interactive=True)
+
+    env_real = tmp_path / ".env"
+    assert env_real.exists()
+    linhas = env_real.read_text()
+    assert "GEMINI_API_KEY" in linhas
+    assert "AIza12345678901234567890123456789012345" in linhas
+    assert "YOUTUBE_API_KEY" in linhas
+    assert "yt_key_123" in linhas

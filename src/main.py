@@ -59,6 +59,7 @@ def main():
     load_dotenv()
     base_dir = Path(__file__).resolve().parent.parent
     app_config = load_app_config(base_dir / "config.json")
+    bilingual_mode = bool(getattr(app_config, "bilingual_mode", True))
     try:
         # Inicializa o diretório /data/session_N desta sessão
         session_dir = init_session_dir()
@@ -96,7 +97,12 @@ def main():
                         playlist_name = fetch_playlist_title(playlist_id)
                         
                         # Toda regra de interface de carregamento está isolada na CLI
-                        videos = show_playlist_extraction_progress(playlist_id, playlist_name, fetch_playlist_videos)
+                        videos = show_playlist_extraction_progress(
+                            playlist_id,
+                            playlist_name,
+                            fetch_playlist_videos,
+                            bilingual_mode=bilingual_mode,
+                        )
                         if videos:
                             # Registra o Node Playlist -> Enum name = "PLAYLIST"
                             append_extraction(session_dir, name=playlist_name, extract_type=url_type.name, payload=videos)
@@ -108,7 +114,11 @@ def main():
                     elif url_type == YouTubeLinkType.VIDEO:
                         video_id = extract_video_id(url)
                         if video_id:
-                            video = show_single_video_progress(video_id, fetch_video_metadata)
+                            video = show_single_video_progress(
+                                video_id,
+                                fetch_video_metadata,
+                                bilingual_mode=bilingual_mode,
+                            )
                             if video:
                                 # Registra o Node Video Único -> Enum name = "VIDEO"
                                 append_extraction(session_dir, name=video["title"], extract_type=url_type.name, payload=video)

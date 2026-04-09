@@ -11,7 +11,7 @@ def verify_api_keys(base_dir: Path):
     """Verifica e solicita as chaves de API caso faltem no .env."""
     env_file = base_dir / ".env"
     if not env_file.exists():
-        return
+        env_file.touch()
         
     gemini_key = get_key(env_file, "GEMINI_API_KEY")
     gemini_key = gemini_key.strip() if gemini_key else ""
@@ -64,6 +64,8 @@ def setup_environment(base_dir: Path = None, interactive: bool = True):
     
     if not env_file.exists() and env_example.exists():
         shutil.copy(env_example, env_file)
+    elif interactive and not env_file.exists():
+        env_file.touch()
         
     # 2. Fallback do system_instruction.md
     sys_inst = base_dir / "system_instruction.md"
