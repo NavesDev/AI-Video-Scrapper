@@ -59,7 +59,7 @@ Você será guiado pelo menu interativo da nossa CLI para selecionar qual o form
 
 ## Validação de API keys e retentativas
 
-- A inicialização valida `GEMINI_API_KEY`; chave ausente ou em formato inválido gera solicitação interativa e erro explícito quando necessário.
+- A inicialização valida `GEMINI_API_KEY`; se o `.env` estiver inválido/ausente mas o processo já tiver uma chave válida exportada, ela é reaproveitada automaticamente sem prompt.
 - `YOUTUBE_API_KEY` ausente também é solicitada de forma interativa.
 - Chamadas Gemini com erro 429 (rate limit) usam retry exponencial configurável por `max_retries_429` e `retry_base_seconds` no `config.json`.
 

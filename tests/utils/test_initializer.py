@@ -131,6 +131,27 @@ def test_verify_api_keys_requires_gemini_when_env_and_template_missing(mocker, t
     assert mock_ask.call_count == 1
 
 
+def test_verify_api_keys_accepts_valid_process_env_gemini_key(mocker, tmp_path):
+    """Com GEMINI_API_KEY válida no ambiente do processo, não deve pedir chave do Gemini."""
+    env_real = tmp_path / ".env"
+    env_real.write_text('GEMINI_API_KEY="placeholder"\nYOUTUBE_API_KEY="yt_key"\n')
+    mocker.patch.dict(
+        "os.environ",
+        {"GEMINI_API_KEY": "AIza12345678901234567890123456789012345"},
+        clear=True,
+    )
+    mock_ask = mocker.patch("questionary.password")
+    mock_ask.return_value.ask.side_effect = ["AIza12345678901234567890123456789012345"]
+
+    setup_environment(base_dir=tmp_path, interactive=True)
+
+    assert mock_ask.call_count == 0
+    linhas = env_real.read_text()
+    assert "GEMINI_API_KEY" in linhas
+    assert "AIza12345678901234567890123456789012345" in linhas
+    assert 'GEMINI_API_KEY="placeholder"' not in linhas
+
+
 def test_setup_environment_creates_env_and_saves_keys_without_templates(mocker, tmp_path):
     mock_ask = mocker.patch("questionary.password")
     mock_ask.return_value.ask.side_effect = [

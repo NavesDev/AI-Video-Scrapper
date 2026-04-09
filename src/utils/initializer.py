@@ -1,4 +1,5 @@
 import shutil
+import os
 from pathlib import Path
 import questionary
 from rich.console import Console
@@ -16,7 +17,16 @@ def verify_api_keys(base_dir: Path):
     gemini_key = get_key(env_file, "GEMINI_API_KEY")
     gemini_key = gemini_key.strip() if gemini_key else ""
     gemini_key_is_valid = is_valid_gemini_api_key(gemini_key) if gemini_key else False
-    gemini_key_needs_update = not gemini_key or not gemini_key_is_valid
+    process_gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    process_gemini_key_is_valid = (
+        is_valid_gemini_api_key(process_gemini_key) if process_gemini_key else False
+    )
+
+    if not gemini_key_is_valid and process_gemini_key_is_valid:
+        set_key(env_file, "GEMINI_API_KEY", process_gemini_key, quote_mode="always")
+        gemini_key_is_valid = True
+
+    gemini_key_needs_update = not gemini_key_is_valid
 
     if gemini_key_needs_update:
         if gemini_key and not gemini_key_is_valid:
